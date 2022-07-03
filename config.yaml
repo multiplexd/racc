@@ -1,0 +1,14 @@
+---
+nick: racc
+server: irc.example.com
+port: 6697
+usessl: 1
+useipv6: 1 # needs Socket6 installed
+nickserv_password: 'r4cc00n l0v3rs 0n 1rc!'
+channels:
+  '#raccoons': ''  # empty channel password
+targets:
+  # per-channel listing of people who should be CC'd when raccoon content is
+  # posted
+  '#raccoons': ['tom', 'harry', 'richard']
+owners: ['jane']  # owner nick
