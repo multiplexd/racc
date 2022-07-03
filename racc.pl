@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+# Copyright (C) 2022 multi
+# Licensed under the ISC licence.
+# See the LICENSE file for more details.
+
 use strict;
 use warnings;
 use v5.10;
