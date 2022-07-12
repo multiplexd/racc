@@ -93,7 +93,7 @@ POE::Session->create(
     inline_states => {
         _start => \&on_startup,
         irc_connected => \&on_connected,
-        irc_private => \&on_private,
+        irc_msg => \&on_private,
         irc_bot_addressed => \&on_addressed,
     },
     heap => \%config,
