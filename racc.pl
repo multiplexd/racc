@@ -12,6 +12,7 @@ use IRC::Utils qw/eq_irc lc_irc/;
 use POE;
 use POE::Component::IRC;
 use POE::Component::IRC::State;
+use POE::Component::IRC::Plugin qw(PCI_EAT_ALL PCI_EAT_NONE);
 use POE::Component::IRC::Plugin::AutoJoin;
 use POE::Component::IRC::Plugin::Connector;
 use POE::Component::IRC::Plugin::BotAddressed;
@@ -65,6 +66,16 @@ $irc->plugin_add(
     POE::Component::IRC::Plugin::Connector->new(),
 );
 
+{
+    # PoCo::IRC::Plugin::BotAddressed's handler for public messages doesn't
+    # detect addressed messages in a way which is totally satisfactory, so we
+    # override the handler function with an after-market version which has the
+    # desired behaviour.
+    no warnings 'redefine';
+    *POE::Component::IRC::Plugin::BotAddressed::S_public =
+        \&patched_botaddressed_handler;
+}
+
 $irc->plugin_add(
     'BotAddressed',
     POE::Component::IRC::Plugin::BotAddressed->new(
@@ -101,6 +112,29 @@ POE::Session->create(
 
 # start main application
 POE::Kernel->run();
+
+# adapted from PoCo::IRC::Plugin::BotAddressed
+sub patched_botaddressed_handler {
+    my ($self, $irc) = splice @_, 0, 2;
+    my $who = ${ $_[0] };
+    my $channels = ${ $_[1] };
+    my $what = ${ $_[2] };
+    my $me = $irc->nick_name();
+    my ($cmd) = $what =~ m/^\s*[@%]?\Q$me\E[:,;]\s*(.*)$/i;
+
+    return PCI_EAT_NONE if !defined $cmd && $what !~ /$me/i;
+
+    for my $channel (@{ $channels }) {
+        if (defined $cmd) {
+            $irc->send_event_next(irc_bot_addressed => $who => [$channel] => $cmd );
+        }
+        else {
+            $irc->send_event_next(irc_bot_mentioned => $who => [$channel] => $what);
+        }
+    }
+
+    return $self->{eat} ? PCI_EAT_ALL : PCI_EAT_NONE;
+}
 
 sub on_startup {
     my $irc = ${$_[HEAP]}{'irc'};
